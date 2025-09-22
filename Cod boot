@@ -1,1 +1,42 @@
+[BITS 16]
+[ORG 0x7c00]
 
+start:
+    xor ax,ax   
+    mov ds,ax
+    mov es,ax  
+    mov ss,ax
+    mov sp,0x7c00
+
+PrintMessage:
+    mov ah,0x13
+    mov al,1
+    mov bx,0xa ;BL: Atributul de culoare (0x0A = 00001010b)
+    xor dx,dx
+    mov bp,Message
+    mov cx,MessageLen 
+    int 0x10 ; serv video (afiseaza)
+
+End:
+    hlt    
+    jmp End
+     
+Message:    db "Hello"
+MessageLen: equ $-Message ; curent minus adresa de început a mesaj
+
+times (0x1be-($-$$)) db 0
+
+    db 80h ; partitie bootabila (0-nu e)
+    db 0,2,0; Start partite CHS (Cylinder-Head-Sector) al partiției: 0 0 2
+    db 0f0h ; tip partite FAT32 LBA-mapped
+    db 0ffh,0ffh,0ffh; sfârșitul partiției chs -finalul discului (mărime max)
+    dd 1; partiția începe de la sectorul 1 pt ca la 0 e MBR
+    dd (20*16*63-1); Numărul de sectoare din partiție. Calculează: 20 cilindri × 16 heads × 63
+ ;sectoare per track - 1 = 20159 sectoare.
+	
+    times (16*3) db 0;  Umple cu zeros celelalte 3 intrări de partiție. Fiecare intrare are 16 
+ ;bytes, deci 3 × 16 = 48 bytes.
+
+    db 0x55; semnătura de boot(daca nu apare, nu e bootabil)
+    db 0xaa
+;first sector of the disk
